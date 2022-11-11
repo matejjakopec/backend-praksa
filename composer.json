@@ -1,5 +1,14 @@
 {
+    "autoload": {
+        "psr-4": {
+            "Controller\\": "Controller",
+            "Database\\": "Database",
+            "Models\\": "Models",
+            "Route\\": "Route"
+        }
+    },
     "require": {
-        "nesbot/carbon": "^2.62"
+        "nesbot/carbon": "^2.62",
+        "ext-pdo": "*"
     }
 }

@@ -1,9 +1,9 @@
 <?php
 
+namespace Models;
 
-
-require_once SITE_ROOT . '/Database/Connection.php';
-require_once SITE_ROOT . '/Models/Timestamps.php';
+use Database\Connection;
+use PDO;
 
 
 class Model
@@ -14,22 +14,24 @@ class Model
 
     protected $allowed;
 
-    protected $table;
+    protected static $table;
 
     private $pdo;
 
-    public function __construct(){
-        $this->openConnection();
+    private static $forbiddenKeys = ['id', 'created_at', 'updated_at', 'deleted_at'];
+
+
+    public static function getTable()
+    {
+        return static::$table;
     }
 
-    private function openConnection(){
-        $connection = new Connection;
-        $this->pdo = $connection->connect();
+    public function __construct(){
+        $this->pdo = Connection::getInstance();
     }
 
     private static function getConnection(){
-        $connection = new Connection;
-        return $connection->connect();
+        return Connection::getInstance();
     }
 
     public function toArray(){
@@ -70,7 +72,7 @@ class Model
     }
 
     public function __wakeup(){
-        $this->openConnection();
+        $this->pdo = Connection::getInstance();
     }
 
     public function __sleep(){
@@ -78,68 +80,81 @@ class Model
         return ['attributes', 'allowed', 'table'];
     }
 
-    //if it wasn't saved before, creates new empty entry(to get an ID), then it populates it with data
-
     public function save(){
+        $table = static::$table;
         if(!array_key_exists('id', $this->attributes)){
-            $sql = "INSERT INTO {$this->table} VALUES()";
+            $sql = "INSERT INTO {$table} (";
+            foreach ($this->attributes as $key => $attribute){
+                if($key != 'id'){
+                    $sql .= "{$key}, ";
+                }
+            }
+            $sql .= $this->timestampsInsert();
+            $sql .= ') VALUES(';
+            foreach ($this->attributes as $key => $attribute){
+                if($key != 'id'){
+                    $sql .= "'{$attribute}', ";
+                }
+            }
+            $sql .= $this->timestampsValues();
+            $sql .= ')';
             $this->pdo->exec($sql);
             $id = $this->pdo->lastInsertId();
             $this->attributes['id'] = $id;
-            $this->addCreatedTimestamps($this->table, $this->pdo, $id);
-        }
-        $sql = "UPDATE {$this->table} SET ";
-        foreach ($this->attributes as $key => $attribute){
-            if($key != 'id'){
-                $sql .= $key . " = '" . $attribute . "', ";
+        }else{
+            $sql = "UPDATE {$table} SET ";
+            foreach ($this->attributes as $key => $attribute){
+                if($key != 'id'){
+                    $sql .= $key . " = '" . $attribute . "', ";
+                }
             }
+            $sql .= $this->updateTimestamp();
+            $sql .= " WHERE id = {$this->attributes['id']}";
+            $this->pdo->exec($sql);
         }
-        $sql = substr($sql, 0, -2);
-        $sql .= " WHERE id = {$this->attributes['id']}";
-        $this->pdo->exec($sql);
-        $this->addUpdatedTimestamps($this->table, $this->pdo, $this->attributes['id']);
-
     }
 
-    public static function all($table){
+    public static function all(){
         $pdo = Model::getConnection();
+        $table = static::getTable();
         $sql = "SELECT * FROM {$table} WHERE deleted_at IS NULL";
         $statement = $pdo->query($sql);
         $rawOutput = $statement->fetchAll(PDO::FETCH_ASSOC);
         $output = [];
         foreach ($rawOutput as $item){
-            $output[] = Model::convertToObject($item, $table);
+            $output[] = Model::convertToObject($item, static::getTable());
         }
         return $output;
     }
 
-    public static function findById($table, $id){
+    public static function findById($id){
         $pdo = Model::getConnection();
+        $table = static::getTable();
         $sql = "SELECT * FROM {$table}  WHERE id = {$id}";
         $statement = $pdo->query($sql);
         $output = $statement->fetch(PDO::FETCH_ASSOC);
         return Model::convertToObject($output, $table);
     }
 
-    public static function findByProperty($table, $propertyName, $value){
+    public static function findByProperty($propertyName, $value){
         $pdo = Model::getConnection();
+        $table = static::getTable();
         $sql = "SELECT * FROM {$table}  WHERE {$propertyName} = '{$value}'";
         $statement = $pdo->query($sql);
         $rawOutput = $statement->fetchAll(PDO::FETCH_ASSOC);
         $output = [];
         foreach ($rawOutput as $item){
-            $output[] = Model::convertToObject($item, $table);
+            $output[] = Model::convertToObject($item);
         }
         return $output;
     }
 
-    private static function convertToObject(array $data, $table){
+    private static function convertToObject(array $data){
         $model = new Model();
         $model->attributes = $data;
-        $model->table = $table;
         $allowed = [];
         foreach ($data as $key => $datum){
-            if(!in_array($key, ['id', 'created_at', 'updated_at', 'deleted_at'])){
+            if(!in_array($key, self::$forbiddenKeys)){
                 $allowed[] = $key;
             }
         }
@@ -148,23 +163,25 @@ class Model
     }
 
     public function delete(){
-        $this->addDeletedTimestamps($this->table, $this->pdo, $this->attributes['id']);
+        $this->addDeletedTimestamps(static::$table, $this->pdo, $this->attributes['id']);
     }
 
     public function forceDelete(){
-        $sql = "DELETE FROM {$this->table} WHERE id = {$this->attributes['id']}";
+        $table = static::$table;
+        $sql = "DELETE FROM {$table} WHERE id = {$this->attributes['id']}";
         $this->pdo->exec($sql);
     }
 
     public function createTable(){
-        $sql = "CREATE TABLE {$this->table} ( id bigint NOT NULL AUTO_INCREMENT, ";
+        $table = static::$table;
+        $sql = "CREATE TABLE {$table} ( id bigint NOT NULL AUTO_INCREMENT, ";
         foreach ($this->attributes as $key => $attribute){
             $sql .= $key . " varchar(255), ";
         }
         $sql = substr($sql, 0, -2);
         $sql .= ',PRIMARY KEY (id))';
         $this->pdo->exec($sql);
-        $this->createTableTimestamps($this->table, $this->pdo);
+        $this->createTableTimestamps(static::$table, $this->pdo);
     }
 
 }

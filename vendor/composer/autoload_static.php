@@ -20,8 +20,21 @@ class ComposerStaticInitd70fc8cb158c41bd4e8695a2d30536a2
             'Symfony\\Contracts\\Translation\\' => 30,
             'Symfony\\Component\\Translation\\' => 30,
         ),
+        'R' => 
+        array (
+            'Route\\' => 6,
+        ),
+        'M' => 
+        array (
+            'Models\\' => 7,
+        ),
+        'D' => 
+        array (
+            'Database\\' => 9,
+        ),
         'C' => 
         array (
+            'Controller\\' => 11,
             'Carbon\\' => 7,
         ),
     );
@@ -42,6 +55,22 @@ class ComposerStaticInitd70fc8cb158c41bd4e8695a2d30536a2
         'Symfony\\Component\\Translation\\' => 
         array (
             0 => __DIR__ . '/..' . '/symfony/translation',
+        ),
+        'Route\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/Route',
+        ),
+        'Models\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/Models',
+        ),
+        'Database\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/Database',
+        ),
+        'Controller\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/Controller',
         ),
         'Carbon\\' => 
         array (

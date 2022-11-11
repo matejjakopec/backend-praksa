@@ -1,9 +1,11 @@
 <?php
 
+namespace Models;
+
 class Animal extends Model
 {
-    public $allowed = ['name', 'type'];
-    public $table = 'animal';
+    protected $allowed = ['name', 'type'];
+    protected static $table = 'animal';
 
     public function setAttributes($attributeName, $value){
         $this->attributes[$attributeName] = $value;

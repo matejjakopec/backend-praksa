@@ -1,35 +1,25 @@
 <?php
 
-require SITE_ROOT . '/vendor/autoload.php';
+namespace Models;
 
 use Carbon\Carbon;
 
 trait Timestamps
 {
-    public function createTableTimestamps($table, $pdo){
-        $sql = "ALTER TABLE {$table} 
-        ADD created_at datetime,
-        ADD updated_at datetime,
-        ADD deleted_at datetime";
-        $this->pdo->exec($sql);
+    public function timestampsInsert(): string{
+        return 'created_at, updated_at, deleted_at';
     }
 
-    public function addCreatedTimestamps($table, $pdo, $id){
+    public function timestampsValues(): string{
         $date = Carbon::now("GMT+1");
-        $sql = "UPDATE {$table} 
-                SET created_at = '{$date}',
-                 updated_at = '{$date}'
-                 WHERE id = '{$id}'";
-        $pdo->exec($sql);
+        return "'{$date}', '{$date}', NULL";
     }
 
-    public function addUpdatedTimestamps($table, $pdo, $id){
+    public function updateTimestamp(): string{
         $date = Carbon::now("GMT+1");
-        $sql = "UPDATE {$table} 
-                SET updated_at = '{$date}'
-                 WHERE id = '{$id}'";
-        $pdo->exec($sql);
+        return "updated_at = '{$date}'";
     }
+
 
     public function addDeletedTimestamps($table, $pdo, $id){
         $date = Carbon::now("GMT+1");
